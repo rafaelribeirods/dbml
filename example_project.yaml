@@ -1,5 +1,4 @@
-database_1:
-  connection:
+- connection:
     type: mysql
     host: localhost
     port: 3306

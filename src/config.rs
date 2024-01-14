@@ -1,13 +1,13 @@
 use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
-use std::{collections::HashMap, path::PathBuf, fs};
+use std::{path::PathBuf, fs};
 
 use crate::db::DatabaseType;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub project: String,
-    pub databases: HashMap<String, ProjectDatabase>,
+    pub databases: Vec<ProjectDatabase>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,7 +27,7 @@ pub struct ProjectDatabaseConnection {
 
 pub fn load(project: &String) -> Result<Config> {
     let contents = get_file_contents(project)?;
-    let databases = serde_yaml::from_str::<HashMap<String, ProjectDatabase>>(&contents)
+    let databases = serde_yaml::from_str::<Vec<ProjectDatabase>>(&contents)
         .map_err(|err| anyhow!(format!("Could not parse the config file for the '{}' project: {}", project, err)))?;
 
     Ok(Config { project: project.to_string(), databases })
@@ -78,13 +78,12 @@ mod tests {
 
         let config = result.unwrap();
         assert_eq!(config.databases.len(), 1);
-        assert!(config.databases.contains_key("database_1"));
-        assert_eq!(config.databases["database_1"].connection.r#type, DatabaseType::MySql);
-        assert_eq!(config.databases["database_1"].connection.host, "localhost");
-        assert_eq!(config.databases["database_1"].connection.port, 3306);
-        assert_eq!(config.databases["database_1"].connection.database, "test_db");
-        assert_eq!(config.databases["database_1"].connection.username, "test_user");
-        assert_eq!(config.databases["database_1"].connection.password, "test_password");
+        assert_eq!(config.databases[0].connection.r#type, DatabaseType::MySql);
+        assert_eq!(config.databases[0].connection.host, "localhost");
+        assert_eq!(config.databases[0].connection.port, 3306);
+        assert_eq!(config.databases[0].connection.database, "test_db");
+        assert_eq!(config.databases[0].connection.username, "test_user");
+        assert_eq!(config.databases[0].connection.password, "test_password");
     }
 
     #[test]

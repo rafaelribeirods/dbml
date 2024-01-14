@@ -14,10 +14,9 @@ impl Command for ScanCommand {
     fn execute(&self) -> Result<()> {
         let config: Config = config::load(&self.project)?;
 
-        for (database_name, database) in config.databases {
+        for database in config.databases {
             println!(
-                "Scanning database {} ({}:{}@{}:{}/{})", 
-                database_name, 
+                "Scanning {}:{}@{}:{}/{}", 
                 database.connection.username,
                 database.connection.password,
                 database.connection.host,
