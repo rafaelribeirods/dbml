@@ -33,6 +33,7 @@ pub fn load(project: &String) -> Result<Config> {
     Ok(Config { project: project.to_string(), databases })
 }
 
+#[cfg(not(test))]
 fn get_home() -> Result<PathBuf> {
     return match home::home_dir() {
         Some(path) => Ok(path),
