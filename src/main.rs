@@ -5,9 +5,10 @@ mod commander;
 mod config;
 mod db;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli: Cli = cli::parse();
-    if let Err(err) = commander::execute(cli) {
+    if let Err(err) = commander::execute(cli).await {
         println!("Error: {}", err)
     }
 }

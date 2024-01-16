@@ -5,13 +5,13 @@ use self::scan::ScanCommand;
 mod scan;
 pub trait Command {
     fn get_starting_message(&self) -> String;
-    fn execute(&self) -> Result<()>;
+    async fn execute(&self) -> Result<()>;
 }
 
-pub fn execute(cli: Cli) -> Result<()> {
+pub async fn execute(cli: Cli) -> Result<()> {
    let command = resolve_command(cli.command);
    println!("{}", command.get_starting_message());
-   command.execute()
+   command.execute().await
 }
 
 fn resolve_command(command: SubCommands) -> impl Command {

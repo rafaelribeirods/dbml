@@ -25,6 +25,22 @@ pub struct ProjectDatabaseConnection {
     pub password: String,
 }
 
+impl ProjectDatabaseConnection {
+
+    pub fn get_connection_string(&self) -> String {
+        match self.r#type {
+            DatabaseType::MySql => format!("mysql://{}:{}@{}:{}/{}",
+                self.username,
+                self.password,
+                self.host,
+                self.port,
+                self.database
+            )
+        }
+    }
+
+}
+
 pub fn load(project: &String) -> Result<Config> {
     let contents = get_file_contents(project)?;
     let databases = serde_yaml::from_str::<Vec<ProjectDatabase>>(&contents)
