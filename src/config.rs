@@ -29,6 +29,7 @@ impl Config {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectDatabase {
     pub connection: ProjectDatabaseConnection,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tables: Option<Vec<ProjectDatabaseTable>>
 }
 
@@ -61,18 +62,27 @@ impl ProjectDatabaseConnection {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectDatabaseTable {
     pub name: String,
-    pub columns: Vec<ProjectDatabaseColumn>
+    pub columns: Vec<ProjectDatabaseColumn>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub indexes: Option<Vec<ProjectDatabaseIndex>>
 }
 
 #[derive(Debug, sqlx::FromRow, Serialize, Deserialize)]
 pub struct ProjectDatabaseColumn {
     pub column_name: String,
     pub data_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data_precision: Option<u32>,
     pub is_primary_key: bool,
     pub is_nullable: bool,
     pub is_unique: bool,
     pub is_auto_increment: bool
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectDatabaseIndex {
+    pub columns: Vec<String>,
+    pub is_primary_key: bool
 }
 
 pub fn load(project: &String) -> Result<Config> {

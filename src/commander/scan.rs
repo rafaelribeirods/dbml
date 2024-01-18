@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable}, db::{self}};
+use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex}, db::{self}};
 
 pub struct ScanCommand {
     pub project: String
@@ -14,6 +14,7 @@ impl Command for ScanCommand {
     async fn execute(&self) -> Result<()> {
         let mut config: Config = config::load(&self.project)?;
         scan_tables_and_columns(&mut config).await?;
+        search_for_composite_primary_keys(&mut config);
         config.save()
     }
 
@@ -26,7 +27,8 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
         let mut tables: Vec<ProjectDatabaseTable> = Vec::new();
         let mut table =  ProjectDatabaseTable {
             name: String::from(""),
-            columns: Vec::new()
+            columns: Vec::new(),
+            indexes: None
         };
 
         let result = db::scan(database.connection.clone()).await?;
@@ -36,7 +38,8 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
                 if !table.name.is_empty() {
                     tables.push(ProjectDatabaseTable {
                         name: table.name,
-                        columns: table.columns
+                        columns: table.columns,
+                        indexes: None
                     });
                 }
 
@@ -59,11 +62,50 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
 
         tables.push(ProjectDatabaseTable {
             name: table.name,
-            columns: table.columns
+            columns: table.columns,
+            indexes: None
         });
 
         database.tables = Some(tables);
+        println!("Finished scanning!")
     }
 
     Ok(())
+}
+
+fn search_for_composite_primary_keys(config: &mut Config) {
+    println!("Searching for composite primary keys...");
+    for database in &mut config.databases {
+        if let Some(tables) = &mut database.tables {
+            for table in tables {
+
+                let mut primary_keys: Vec<String> = Vec::new();
+
+                for column in &table.columns {
+                    if column.is_primary_key {
+                        primary_keys.push(column.column_name.to_string());
+                    }
+                }
+
+                if primary_keys.len() > 1 {
+                    println!("Table {} has a composite primary key: {}", table.name, primary_keys.join(", "));
+
+                    let index = ProjectDatabaseIndex {
+                        columns: primary_keys,
+                        is_primary_key: true,
+                    };
+                    let mut indexes: Vec<ProjectDatabaseIndex> = Vec::new();
+                    indexes.push(index);
+                    table.indexes = Some(indexes);
+
+                    for column in &mut table.columns {
+                        if column.is_primary_key {
+                            column.is_primary_key = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    println!("Finished searching for composite primary keys!");
 }
