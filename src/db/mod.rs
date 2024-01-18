@@ -5,7 +5,7 @@ use mysql::MysqlDatabase;
 
 mod mysql;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DatabaseType {
     MySql,
@@ -13,15 +13,15 @@ pub enum DatabaseType {
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct ColumnInfo {
-    schema_name: String,
-    table_name: String,
-    column_name: String,
-    data_type: String,
-    data_precision: u16,
-    is_primary_key: bool,
-    is_nullable: bool,
-    is_unique: bool,
-    is_auto_increment: bool
+    pub schema_name: String,
+    pub table_name: String,
+    pub column_name: String,
+    pub data_type: String,
+    pub data_precision: Option<u32>,
+    pub is_primary_key: bool,
+    pub is_nullable: bool,
+    pub is_unique: bool,
+    pub is_auto_increment: bool
 }
 
 pub trait DatabaseEngine {

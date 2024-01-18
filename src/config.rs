@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
-use std::{path::PathBuf, fs};
+use std::{path::PathBuf, fs, io::Write};
 
 use crate::db::DatabaseType;
 
@@ -10,12 +10,29 @@ pub struct Config {
     pub databases: Vec<ProjectDatabase>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ProjectDatabase {
-    pub connection: ProjectDatabaseConnection,
+impl Config {
+
+    pub fn save(&self) -> Result<()> {
+        let contents = serde_yaml::to_string(&self.databases)
+            .map_err(|err| anyhow!(format!("Could not generate the updated configuration file for project '{}': {}", self.project, err)))?;
+
+        let path = get_path(&self.project)?;
+        let mut file = fs::OpenOptions::new().write(true).truncate(true).open(&path)
+            .map_err(|err| anyhow!(format!("Could not open configuration file for project '{}': {}", self.project, err)))?;
+        
+        file.write_all(contents.as_bytes())
+            .map_err(|err| anyhow!(format!("Could save updated configuration for project '{}': {}", self.project, err)))
+    }
+
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectDatabase {
+    pub connection: ProjectDatabaseConnection,
+    pub tables: Option<Vec<ProjectDatabaseTable>>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectDatabaseConnection {
     pub r#type: DatabaseType,
     pub host: String,
@@ -39,6 +56,23 @@ impl ProjectDatabaseConnection {
         }
     }
 
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectDatabaseTable {
+    pub name: String,
+    pub columns: Vec<ProjectDatabaseColumn>
+}
+
+#[derive(Debug, sqlx::FromRow, Serialize, Deserialize)]
+pub struct ProjectDatabaseColumn {
+    pub column_name: String,
+    pub data_type: String,
+    pub data_precision: Option<u32>,
+    pub is_primary_key: bool,
+    pub is_nullable: bool,
+    pub is_unique: bool,
+    pub is_auto_increment: bool
 }
 
 pub fn load(project: &String) -> Result<Config> {
