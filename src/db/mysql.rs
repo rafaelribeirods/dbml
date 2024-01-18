@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use sqlx::{MySqlConnection, Connection};
 use crate::config::ProjectDatabaseConnection;
 
-use super::{DatabaseEngine, ColumnInfo};
+use super::{DatabaseEngine, ColumnInfo, ReferenceInfo};
 
 pub struct MysqlDatabase {
     pub connection_info: ProjectDatabaseConnection
@@ -32,6 +32,28 @@ impl DatabaseEngine for MysqlDatabase {
             .map_err(|err| anyhow!(format!("Could not connect to '{}': {}", &self.connection_info.get_connection_string(), err)))?;
         
         sqlx::query_as::<_, ColumnInfo>(query.as_str()).fetch_all(&mut conn).await
+            .map_err(|err| anyhow!(format!("Could not run the scan query on '{}': {}", &self.connection_info.get_connection_string(), err)))
+    }
+
+    async fn scan_references(&self) -> Result<Vec<ReferenceInfo>> {
+        let query: String = format!("
+        SELECT 
+            table_schema schema_name,
+            table_name,
+            column_name, 
+            referenced_table_schema referenced_schema_name,
+            referenced_table_name,
+            referenced_column_name
+        FROM information_schema.key_column_usage
+        WHERE
+            referenced_column_name IS NOT NULL
+            AND (referenced_table_schema = '{}' OR table_schema = '{}');
+        ", self.connection_info.database, self.connection_info.database);
+
+        let mut conn = MySqlConnection::connect(&self.connection_info.get_connection_string()).await
+            .map_err(|err| anyhow!(format!("Could not connect to '{}': {}", &self.connection_info.get_connection_string(), err)))?;
+        
+        sqlx::query_as::<_, ReferenceInfo>(query.as_str()).fetch_all(&mut conn).await
             .map_err(|err| anyhow!(format!("Could not run the scan query on '{}': {}", &self.connection_info.get_connection_string(), err)))
     }
 

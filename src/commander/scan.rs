@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex}, db::{self}};
+use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex, ProjectDatabaseReference}, db::{self}};
 
 pub struct ScanCommand {
     pub project: String
@@ -15,6 +15,7 @@ impl Command for ScanCommand {
         let mut config: Config = config::load(&self.project)?;
         scan_tables_and_columns(&mut config).await?;
         search_for_composite_primary_keys(&mut config);
+        scan_references(&mut config).await?;
         config.save()
     }
 
@@ -108,4 +109,41 @@ fn search_for_composite_primary_keys(config: &mut Config) {
         }
     }
     println!("Finished searching for composite primary keys!");
+}
+
+async fn scan_references(config: &mut Config) -> Result<()> {
+    for database in &mut config.databases {
+        println!("Scanning references from {}", database.connection.get_connection_string());
+
+        let result = db::scan_references(database.connection.clone()).await?;
+        let mut references: Vec<ProjectDatabaseReference> = Vec::new();
+        for reference_info in result {
+            let key = format!(
+                "{}.{}.{}",
+                reference_info.schema_name,
+                reference_info.table_name,
+                reference_info.column_name
+            );
+            let referenced_key = format!(
+                "{}.{}.{}", 
+                reference_info.referenced_schema_name,
+                reference_info.referenced_table_name,
+                reference_info.referenced_column_name
+            );
+
+            let reference = ProjectDatabaseReference {
+                key,
+                referenced_key,
+                operator: String::from("-"),
+            };
+
+            references.push(reference);
+        }
+
+        database.references = Some(references);
+
+        println!("Finished scanning references!")
+    }
+
+    Ok(())
 }

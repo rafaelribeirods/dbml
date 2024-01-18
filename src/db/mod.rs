@@ -24,12 +24,29 @@ pub struct ColumnInfo {
     pub is_auto_increment: bool
 }
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct ReferenceInfo {
+    pub schema_name: String,
+    pub table_name: String,
+    pub column_name: String,
+    pub referenced_schema_name: String,
+    pub referenced_table_name: String,
+    pub referenced_column_name: String
+}
+
 pub trait DatabaseEngine {
     async fn scan_tables_and_columns(&self) -> Result<Vec<ColumnInfo>>;
+    async fn scan_references(&self) -> Result<Vec<ReferenceInfo>>;
 }
 
 pub async fn scan_tables_and_columns(connection_info: ProjectDatabaseConnection) -> Result<Vec<ColumnInfo>> {
     match connection_info.r#type {
         DatabaseType::MySql => MysqlDatabase{ connection_info }.scan_tables_and_columns().await
+    }
+}
+
+pub async fn scan_references(connection_info: ProjectDatabaseConnection) -> Result<Vec<ReferenceInfo>> {
+    match connection_info.r#type {
+        DatabaseType::MySql => MysqlDatabase{ connection_info }.scan_references().await
     }
 }
