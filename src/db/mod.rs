@@ -25,11 +25,11 @@ pub struct ColumnInfo {
 }
 
 pub trait DatabaseEngine {
-    async fn scan(&self) -> Result<Vec<ColumnInfo>>;
+    async fn scan_tables_and_columns(&self) -> Result<Vec<ColumnInfo>>;
 }
 
-pub async fn scan(connection_info: ProjectDatabaseConnection) -> Result<Vec<ColumnInfo>> {
+pub async fn scan_tables_and_columns(connection_info: ProjectDatabaseConnection) -> Result<Vec<ColumnInfo>> {
     match connection_info.r#type {
-        DatabaseType::MySql => MysqlDatabase{ connection_info }.scan().await
+        DatabaseType::MySql => MysqlDatabase{ connection_info }.scan_tables_and_columns().await
     }
 }

@@ -31,7 +31,7 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
             indexes: None
         };
 
-        let result = db::scan(database.connection.clone()).await?;
+        let result = db::scan_tables_and_columns(database.connection.clone()).await?;
         for column_info in result {
             let current_table_name = format!("{}.{}", column_info.schema_name, column_info.table_name);
             if current_table_name != table.name {

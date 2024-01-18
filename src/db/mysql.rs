@@ -10,7 +10,7 @@ pub struct MysqlDatabase {
 
 impl DatabaseEngine for MysqlDatabase {
 
-    async fn scan(&self) -> Result<Vec<ColumnInfo>> {
+    async fn scan_tables_and_columns(&self) -> Result<Vec<ColumnInfo>> {
         let query: String = format!("
         SELECT 
             table_schema schema_name,
