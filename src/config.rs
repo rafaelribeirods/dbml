@@ -110,7 +110,41 @@ impl ProjectDatabaseTable {
                 + &options + &'\n'.to_string()
 
         }
-        dbml = dbml + "}" + &'\n'.to_string() + &'\n'.to_string();
+
+        let mut idxs:Vec<String> = Vec::new();
+        if let Some(indexes) = &self.indexes {
+            for index in indexes {
+                let mut idx = index.columns.join(", ");
+                if index.columns.len() > 1 {
+                    idx = format!("({})", idx);
+                }
+
+                let mut index_options: Vec<&str> = Vec::new();
+                if index.is_primary_key {
+                    index_options.push("pk");
+                }
+
+                let mut formatted_index_options = String::from("");
+                if index_options.len() > 0 {
+                    formatted_index_options = format!(" [ {} ]", index_options.join(", "));
+                }
+
+                idx = idx + &formatted_index_options;
+                idxs.push(idx);
+             }
+        }
+
+        let mut indexes_output = String::from("");
+        if idxs.len() > 0 {
+            indexes_output = indexes_output + &"\n\tindexes {\n".to_string();
+            for idx in idxs {
+                indexes_output = indexes_output
+                    + &'\t'.to_string() + &'\t'.to_string()
+                    + &idx + &'\n'.to_string()
+            } 
+                indexes_output = indexes_output + &'\t'.to_string() + "}" + &'\n'.to_string();
+        }
+        dbml = dbml + &indexes_output + "}" + &'\n'.to_string() + &'\n'.to_string();
         dbml
     }
 
