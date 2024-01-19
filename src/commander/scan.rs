@@ -34,7 +34,7 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
 
         let result = db::scan_tables_and_columns(database.connection.clone()).await?;
         for column_info in result {
-            let current_table_name = format!("{}.{}", column_info.schema_name, column_info.table_name);
+            let current_table_name = format!("\"{}\".\"{}\"", column_info.schema_name, column_info.table_name);
             if current_table_name != table.name {
                 if !table.name.is_empty() {
                     tables.push(ProjectDatabaseTable {
@@ -51,7 +51,7 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
             let project_database_column = ProjectDatabaseColumn { 
                 column_name: column_info.column_name, 
                 data_type: column_info.data_type, 
-                data_precision: column_info.data_precision, 
+                data_precision: column_info.data_precision.map(|x| x.to_string()), 
                 is_primary_key: column_info.is_primary_key,
                 is_nullable: column_info.is_nullable, 
                 is_unique: column_info.is_unique, 
