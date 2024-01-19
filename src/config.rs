@@ -69,12 +69,59 @@ pub struct ProjectDatabaseTable {
     pub indexes: Option<Vec<ProjectDatabaseIndex>>
 }
 
+impl ProjectDatabaseTable {
+
+    pub fn to_dbml(&self) -> String {
+        let mut dbml = format!("Table {} {{\n", self.name);
+        for column in &self.columns {
+            let mut column_options: Vec<&str> = Vec::new();
+
+            if column.is_primary_key {
+                column_options.push("pk");
+            }
+
+            if column.is_nullable {
+                column_options.push("null");
+            }
+            else {
+                column_options.push("not null");
+            }
+
+            if column.is_unique {
+                column_options.push("unique");
+            }
+
+            if column.is_auto_increment {
+                column_options.push("increment");
+            }
+
+            let options = format!("[ {} ]", column_options.join(", "));
+
+            let precision = match &column.data_precision {
+                Some(x) if x != "0" => format!("({})", x),
+                _ => String::new(),
+            };
+
+            dbml = dbml 
+                + &'\t'.to_string() 
+                + &column.column_name + " "
+                + &column.data_type
+                + &precision + " "
+                + &options + &'\n'.to_string()
+
+        }
+        dbml = dbml + "}" + &'\n'.to_string() + &'\n'.to_string();
+        dbml
+    }
+
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectDatabaseColumn {
     pub column_name: String,
     pub data_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub data_precision: Option<u32>,
+    pub data_precision: Option<String>,
     pub is_primary_key: bool,
     pub is_nullable: bool,
     pub is_unique: bool,

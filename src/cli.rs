@@ -16,6 +16,12 @@ pub enum SubCommands {
         project: String,
     },
 
+    /// Generates the .dbml file for a project
+    Generate {
+        /// The project to be have it's DBML file generated
+        project: String,
+    },
+
 }
 
 pub fn parse() -> Cli {

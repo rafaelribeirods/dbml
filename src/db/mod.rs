@@ -17,7 +17,7 @@ pub struct ColumnInfo {
     pub table_name: String,
     pub column_name: String,
     pub data_type: String,
-    pub data_precision: Option<u32>,
+    pub data_precision: Option<String>,
     pub is_primary_key: bool,
     pub is_nullable: bool,
     pub is_unique: bool,

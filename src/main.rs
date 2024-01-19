@@ -4,6 +4,7 @@ mod cli;
 mod commander;
 mod config;
 mod db;
+mod dbml;
 
 #[tokio::main]
 async fn main() {
