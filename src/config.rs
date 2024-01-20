@@ -175,6 +175,19 @@ pub struct ProjectDatabaseReference {
     pub operator: String,
 }
 
+impl ProjectDatabaseReference {
+
+    pub fn to_dbml(&self) -> String {
+        format!(
+            "Ref: {} {} {}\n",
+            self.key,
+            self.operator,
+            self.referenced_key
+        )
+    }
+
+}
+
 pub fn load(project: &String) -> Result<Config> {
     let contents = get_file_contents(project)?;
     let databases = serde_yaml::from_str::<Vec<ProjectDatabase>>(&contents)

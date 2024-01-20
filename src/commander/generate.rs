@@ -23,6 +23,12 @@ impl Command for GenerateCommand {
                     dbml.write(table.to_dbml())?;
                 }
             }
+
+            if let Some(references) = &database.references {
+                for reference in references {
+                    dbml.write(reference.to_dbml())?;
+                }
+            }
         }
 
         dbml.save()?;
