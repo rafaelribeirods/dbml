@@ -21,7 +21,9 @@ pub struct ColumnInfo {
     pub is_primary_key: bool,
     pub is_nullable: bool,
     pub is_unique: bool,
-    pub is_auto_increment: bool
+    pub is_auto_increment: bool,
+    pub default_value: Option<String>,
+    pub ordinal_position: u8
 }
 
 #[derive(Debug, sqlx::FromRow)]

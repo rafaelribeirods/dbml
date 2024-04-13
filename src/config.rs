@@ -70,26 +70,48 @@ impl ProjectDatabaseTable {
 
     pub fn to_dbml(&self, name: String) -> String {
         let mut dbml = format!("Table {} {{\n", name);
+
+        let mut ordered_columns: Vec<Option<(&String, &ProjectDatabaseColumn)>> = Vec::new();
         for (column_name, column) in &self.columns {
-            let mut column_options: Vec<&str> = Vec::new();
+            let index: usize = column.ordinal_position.wrapping_sub(1) as usize;
+
+            if index >= ordered_columns.len() {
+                ordered_columns.resize(index + 1, None);
+            }
+
+            ordered_columns[index] = Some((column_name, column));
+        }
+
+        for item in ordered_columns.iter() {
+
+            if let None = item {
+                continue;
+            }
+
+            let (column_name, column) = item.unwrap();
+            let mut column_options: Vec<String> = Vec::new();
 
             if column.is_primary_key {
-                column_options.push("pk");
+                column_options.push("pk".to_string());
             }
 
             if column.is_nullable {
-                column_options.push("null");
+                column_options.push("null".to_string());
             }
             else {
-                column_options.push("not null");
+                column_options.push("not null".to_string());
             }
 
             if column.is_unique {
-                column_options.push("unique");
+                column_options.push("unique".to_string());
             }
 
             if column.is_auto_increment {
-                column_options.push("increment");
+                column_options.push("increment".to_string());
+            }
+
+            if column.default_value.is_some() {
+                column_options.push(format!("default: \"{}\"", column.default_value.clone().unwrap()));
             }
 
             let options = format!("[ {} ]", column_options.join(", "));
@@ -155,7 +177,10 @@ pub struct ProjectDatabaseColumn {
     pub is_primary_key: bool,
     pub is_nullable: bool,
     pub is_unique: bool,
-    pub is_auto_increment: bool
+    pub is_auto_increment: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_value: Option<String>,
+    pub ordinal_position: u8
 }
 
 #[derive(Debug, Serialize, Deserialize)]

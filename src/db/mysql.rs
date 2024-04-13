@@ -22,7 +22,8 @@ impl DatabaseEngine for MysqlDatabase {
             CASE WHEN is_nullable = 'YES' THEN 1 ELSE 0 END AS is_nullable,
             CASE WHEN column_key = 'UNI' THEN 1 ELSE 0 END AS is_unique,
             CASE WHEN extra = 'auto_increment' THEN 1 ELSE 0 END AS is_auto_increment,
-            column_default AS default_value
+            column_default AS default_value,
+            ordinal_position
         FROM information_schema.columns
         ORDER BY table_name, ordinal_position;
         ";

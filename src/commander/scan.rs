@@ -55,7 +55,9 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
                 is_primary_key: column_info.is_primary_key,
                 is_nullable: column_info.is_nullable, 
                 is_unique: column_info.is_unique, 
-                is_auto_increment: column_info.is_auto_increment
+                is_auto_increment: column_info.is_auto_increment,
+                default_value: column_info.default_value,
+                ordinal_position: column_info.ordinal_position
             };
 
             table.columns.insert(column_info.column_name, project_database_column);
