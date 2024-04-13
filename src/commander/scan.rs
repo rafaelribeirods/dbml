@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex, ProjectDatabaseReference}, db::{self}};
 
@@ -22,34 +24,32 @@ impl Command for ScanCommand {
 }
 
 async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
-    for database in &mut config.databases {
-        println!("Scanning {}", database.connection.get_connection_string());
+    for (database_name, database) in &mut config.databases {
+        println!("Scanning database {} at {}", database_name, database.connection.get_connection_string());
 
-        let mut tables: Vec<ProjectDatabaseTable> = Vec::new();
+        let mut tables: HashMap<String, ProjectDatabaseTable> = HashMap::new();
         let mut table =  ProjectDatabaseTable {
-            name: String::from(""),
-            columns: Vec::new(),
+            columns: HashMap::new(),
             indexes: None
         };
+        let mut table_name = String::from("");
 
         let result = db::scan_tables_and_columns(database.connection.clone()).await?;
         for column_info in result {
-            let current_table_name = format!("\"{}\".\"{}\"", column_info.schema_name, column_info.table_name);
-            if current_table_name != table.name {
-                if !table.name.is_empty() {
-                    tables.push(ProjectDatabaseTable {
-                        name: table.name,
+            let current_table_name = format!("{}.{}", column_info.schema_name, column_info.table_name);
+            if current_table_name != table_name {
+                if !table_name.is_empty() {
+                    tables.insert(table_name, ProjectDatabaseTable {
                         columns: table.columns,
                         indexes: None
                     });
                 }
 
-                table.name = current_table_name;
-                table.columns = Vec::new();
+                table_name = current_table_name;
+                table.columns = HashMap::new();
             }
 
             let project_database_column = ProjectDatabaseColumn { 
-                column_name: column_info.column_name, 
                 data_type: column_info.data_type, 
                 data_precision: column_info.data_precision.map(|x| x.to_string()), 
                 is_primary_key: column_info.is_primary_key,
@@ -58,11 +58,10 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
                 is_auto_increment: column_info.is_auto_increment
             };
 
-            table.columns.push(project_database_column);
+            table.columns.insert(column_info.column_name, project_database_column);
         }
 
-        tables.push(ProjectDatabaseTable {
-            name: table.name,
+        tables.insert(table_name, ProjectDatabaseTable {
             columns: table.columns,
             indexes: None
         });
@@ -76,20 +75,20 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
 
 fn search_for_composite_primary_keys(config: &mut Config) {
     println!("Searching for composite primary keys...");
-    for database in &mut config.databases {
+    for (_, database) in &mut config.databases {
         if let Some(tables) = &mut database.tables {
-            for table in tables {
+            for (table_name, table) in tables {
 
                 let mut primary_keys: Vec<String> = Vec::new();
 
-                for column in &table.columns {
+                for (column_name, column) in &table.columns {
                     if column.is_primary_key {
-                        primary_keys.push(column.column_name.to_string());
+                        primary_keys.push(column_name.to_string());
                     }
                 }
 
                 if primary_keys.len() > 1 {
-                    println!("Table {} has a composite primary key: {}", table.name, primary_keys.join(", "));
+                    println!("Table {} has a composite primary key: {}", table_name, primary_keys.join(", "));
 
                     let index = ProjectDatabaseIndex {
                         columns: primary_keys,
@@ -99,7 +98,7 @@ fn search_for_composite_primary_keys(config: &mut Config) {
                     indexes.push(index);
                     table.indexes = Some(indexes);
 
-                    for column in &mut table.columns {
+                    for (_, column) in &mut table.columns {
                         if column.is_primary_key {
                             column.is_primary_key = false;
                         }
@@ -112,8 +111,8 @@ fn search_for_composite_primary_keys(config: &mut Config) {
 }
 
 async fn scan_references(config: &mut Config) -> Result<()> {
-    for database in &mut config.databases {
-        println!("Scanning references from {}", database.connection.get_connection_string());
+    for (database_name, database) in &mut config.databases {
+        println!("Scanning references from {} at {}", database_name, database.connection.get_connection_string());
 
         let result = db::scan_references(database.connection.clone()).await?;
         let mut references: Vec<ProjectDatabaseReference> = Vec::new();

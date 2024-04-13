@@ -17,10 +17,10 @@ impl Command for GenerateCommand {
         let config: Config = config::load(&self.project)?;
         let mut dbml: DBML = dbml::init(&self.project)?;
 
-        for database in &config.databases {
+        for (_, database) in &config.databases {
             if let Some(tables) = &database.tables {
-                for table in tables {
-                    dbml.write(table.to_dbml())?;
+                for (table_name, table) in tables {
+                    dbml.write(table.to_dbml(table_name.to_string()))?;
                 }
             }
 

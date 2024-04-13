@@ -1,13 +1,13 @@
 use anyhow::{Result, anyhow};
 use serde::{Serialize, Deserialize};
-use std::{path::PathBuf, fs, io::Write};
+use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 
 use crate::db::DatabaseType;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub project: String,
-    pub databases: Vec<ProjectDatabase>,
+    pub databases: HashMap<String, ProjectDatabase>,
 }
 
 impl Config {
@@ -30,7 +30,7 @@ impl Config {
 pub struct ProjectDatabase {
     pub connection: ProjectDatabaseConnection,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tables: Option<Vec<ProjectDatabaseTable>>,
+    pub tables: Option<HashMap<String, ProjectDatabaseTable>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub references: Option<Vec<ProjectDatabaseReference>>
 }
@@ -40,7 +40,6 @@ pub struct ProjectDatabaseConnection {
     pub r#type: DatabaseType,
     pub host: String,
     pub port: u16,
-    pub database: String,
     pub username: String,
     pub password: String,
 }
@@ -49,12 +48,11 @@ impl ProjectDatabaseConnection {
 
     pub fn get_connection_string(&self) -> String {
         match self.r#type {
-            DatabaseType::MySql => format!("mysql://{}:{}@{}:{}/{}",
+            DatabaseType::MySql => format!("mysql://{}:{}@{}:{}",
                 self.username,
                 self.password,
                 self.host,
-                self.port,
-                self.database
+                self.port
             )
         }
     }
@@ -63,17 +61,16 @@ impl ProjectDatabaseConnection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectDatabaseTable {
-    pub name: String,
-    pub columns: Vec<ProjectDatabaseColumn>,
+    pub columns: HashMap<String, ProjectDatabaseColumn>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub indexes: Option<Vec<ProjectDatabaseIndex>>
 }
 
 impl ProjectDatabaseTable {
 
-    pub fn to_dbml(&self) -> String {
-        let mut dbml = format!("Table {} {{\n", self.name);
-        for column in &self.columns {
+    pub fn to_dbml(&self, name: String) -> String {
+        let mut dbml = format!("Table {} {{\n", name);
+        for (column_name, column) in &self.columns {
             let mut column_options: Vec<&str> = Vec::new();
 
             if column.is_primary_key {
@@ -104,7 +101,7 @@ impl ProjectDatabaseTable {
 
             dbml = dbml 
                 + &'\t'.to_string() 
-                + &column.column_name + " "
+                + &column_name + " "
                 + &column.data_type
                 + &precision + " "
                 + &options + &'\n'.to_string()
@@ -152,7 +149,6 @@ impl ProjectDatabaseTable {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectDatabaseColumn {
-    pub column_name: String,
     pub data_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_precision: Option<String>,
@@ -190,7 +186,7 @@ impl ProjectDatabaseReference {
 
 pub fn load(project: &String) -> Result<Config> {
     let contents = get_file_contents(project)?;
-    let databases = serde_yaml::from_str::<Vec<ProjectDatabase>>(&contents)
+    let databases = serde_yaml::from_str::<HashMap<String, ProjectDatabase>>(&contents)
         .map_err(|err| anyhow!(format!("Could not parse the config file for the '{}' project: {}", project, err)))?;
 
     Ok(Config { project: project.to_string(), databases })
@@ -240,13 +236,13 @@ mod tests {
         assert!(result.is_ok());
 
         let config = result.unwrap();
-        assert_eq!(config.databases.len(), 1);
-        assert_eq!(config.databases[0].connection.r#type, DatabaseType::MySql);
-        assert_eq!(config.databases[0].connection.host, "localhost");
-        assert_eq!(config.databases[0].connection.port, 3306);
-        assert_eq!(config.databases[0].connection.database, "test_db");
-        assert_eq!(config.databases[0].connection.username, "test_user");
-        assert_eq!(config.databases[0].connection.password, "test_password");
+        let database = config.databases.get("test_db").unwrap();
+
+        assert_eq!(database.connection.r#type, DatabaseType::MySql);
+        assert_eq!(database.connection.host, "localhost");
+        assert_eq!(database.connection.port, 3306);
+        assert_eq!(database.connection.username, "test_user");
+        assert_eq!(database.connection.password, "test_password");
     }
 
     #[test]
