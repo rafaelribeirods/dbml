@@ -47,6 +47,7 @@ impl Command for SearchCommand {
             should_add_references = true;
         }
 
+        let mut found = 0;
         for (database_name, database) in &mut config.databases {
             if let Some(tables) = &mut database.tables {
                 println!("Searching on {} tables...", database_name);
@@ -58,7 +59,8 @@ impl Command for SearchCommand {
                             || !config.references.as_ref().unwrap().contains_key(&key))
                             && (config.custom_references.is_none()
                             || !config.custom_references.clone().unwrap().contains_key(&key)) {
-                                println!("{}", format!("Found an unmapped column matching '{}': {} ({}___{})", self.regex, column_name, database_name, table_name));
+                                found = found + 1;
+                                println!("{}: {}", found, format!("Found an unmapped column matching '{}': {} ({}___{})", self.regex, column_name, database_name, table_name));
                                 if should_add_references {
                                     
                                     let referenced_key = format!("{}___{}.{}", referenced_database_name, referenced_table_name, referenced_column_name);
