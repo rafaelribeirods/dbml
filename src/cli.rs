@@ -28,6 +28,8 @@ pub enum SubCommands {
         project: String,
         /// The regex that will be used to search for the columns
         regex: String,
+        /// The key referenced by the columns that match regex (format: {database_name}___{table_name}.{column_name})
+        referenced_key: Option<String>,
     }
 
 }
