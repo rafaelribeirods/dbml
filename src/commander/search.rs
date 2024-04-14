@@ -25,7 +25,7 @@ impl Command for SearchCommand {
         let mut referenced_column_name = "";
         let mut should_add_references = false;
 
-        let mut table_name_joined = String::from("");
+        let table_name_joined;
         if let Some(referenced_key) = &self.referenced_key {
             if !referenced_key_regex.is_match(self.referenced_key.as_ref().unwrap()) {
                 return Err(anyhow!("The referenced key must follow this pattern: DATABASE_NAME___TABLE_NAME.COLUMN_NAME"));
@@ -69,7 +69,6 @@ impl Command for SearchCommand {
                                                 .push(referenced_key);
                                         }
                                         None => {
-                                            // If the field is None, create a new HashMap and insert the key-value pair
                                             let mut new_map = HashMap::new();
                                             let mut new_vec = Vec::new();
                                             new_vec.push(referenced_key);
