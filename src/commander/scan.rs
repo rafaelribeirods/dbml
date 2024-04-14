@@ -117,7 +117,6 @@ async fn scan_references(config: &mut Config) -> Result<()> {
         println!("Scanning references from {} at {}", database_name, database.connection.get_connection_string());
 
         let result = db::scan_references(database.connection.clone()).await?;
-        let mut references: HashMap<String, Vec<String>> = HashMap::new();
         for reference_info in result {
             let key = format!(
                 "{}___{}___{}.{}",
@@ -134,12 +133,21 @@ async fn scan_references(config: &mut Config) -> Result<()> {
                 reference_info.referenced_column_name
             );
 
-            let mut referenced_keys: Vec<String> = Vec::new();
-            referenced_keys.push(referenced_key);
-            references.insert(key, referenced_keys);
+            match config.references {
+                Some(ref mut map) => {
+                    map.entry(key.clone())
+                        .or_insert_with(Vec::new)
+                        .push(referenced_key);
+                }
+                None => {
+                    let mut new_map = HashMap::new();
+                    let mut new_vec = Vec::new();
+                    new_vec.push(referenced_key);
+                    new_map.insert(key.clone(), new_vec);
+                    config.references = Some(new_map);
+                }
+            }
         }
-
-        config.references = Some(references);
 
         println!("Finished scanning references!")
     }
