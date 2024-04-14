@@ -23,16 +23,28 @@ impl Command for GenerateCommand {
                     dbml.write(table.to_dbml(database_name, table_name))?;
                 }
             }
+        }
 
-            if let Some(references) = &database.references {
-                for (key, referenced_keys) in references {
-                    for referenced_key in referenced_keys {
-                        dbml.write(format!(
-                            "Ref: {} - {}\n",
-                            key,
-                            referenced_key
-                        ))?;
-                    }
+        if let Some(references) = &config.references {
+            for (key, referenced_keys) in references {
+                for referenced_key in referenced_keys {
+                    dbml.write(format!(
+                        "Ref: {} - {}\n",
+                        key,
+                        referenced_key
+                    ))?;
+                }
+            }
+        }
+
+        if let Some(references) = &config.custom_references {
+            for (key, referenced_keys) in references {
+                for referenced_key in referenced_keys {
+                    dbml.write(format!(
+                        "Ref: {} - {}\n",
+                        key,
+                        referenced_key
+                    ))?;
                 }
             }
         }

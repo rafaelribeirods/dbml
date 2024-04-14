@@ -8,6 +8,8 @@ use crate::db::DatabaseType;
 pub struct FileConfig {
     pub databases: HashMap<String, ProjectDatabase>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub references: Option<HashMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_references: Option<HashMap<String, Vec<String>>>,
 }
 
@@ -15,6 +17,7 @@ pub struct FileConfig {
 pub struct Config {
     pub project: String,
     pub databases: HashMap<String, ProjectDatabase>,
+    pub references: Option<HashMap<String, Vec<String>>>,
     pub custom_references: Option<HashMap<String, Vec<String>>>,
 }
 
@@ -23,6 +26,7 @@ impl Config {
     pub fn save(&self) -> Result<()> {
         let config = FileConfig {
             databases: self.databases.clone(),
+            references: self.references.clone(),
             custom_references: self.custom_references.clone(),
         };
 
@@ -44,8 +48,6 @@ pub struct ProjectDatabase {
     pub connection: ProjectDatabaseConnection,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tables: Option<HashMap<String, ProjectDatabaseTable>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub references: Option<HashMap<String, Vec<String>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -207,7 +209,12 @@ pub fn load(project: &String) -> Result<Config> {
     let config = serde_yaml::from_str::<FileConfig>(&contents)
         .map_err(|err| anyhow!(format!("Could not parse the config file for the '{}' project: {}", project, err)))?;
 
-    Ok(Config { project: project.to_string(), databases: config.databases, custom_references: config.custom_references })
+    Ok(Config { 
+        project: project.to_string(), 
+        databases: config.databases, 
+        references: config.references,
+        custom_references: config.custom_references 
+    })
 }
 
 #[cfg(not(test))]

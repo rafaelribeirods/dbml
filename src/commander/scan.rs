@@ -139,7 +139,7 @@ async fn scan_references(config: &mut Config) -> Result<()> {
             references.insert(key, referenced_keys);
         }
 
-        database.references = Some(references);
+        config.references = Some(references);
 
         println!("Finished scanning references!")
     }

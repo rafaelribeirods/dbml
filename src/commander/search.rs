@@ -54,8 +54,8 @@ impl Command for SearchCommand {
                     for (column_name, _) in &table.columns {
                         if column_name_regex.is_match(column_name) {
                             let key = format!("{}___{}.{}", database_name, table_name, column_name);
-                            if (database.references.is_none() 
-                            || !database.references.as_ref().unwrap().contains_key(&key))
+                            if (config.references.is_none() 
+                            || !config.references.as_ref().unwrap().contains_key(&key))
                             && (config.custom_references.is_none()
                             || !config.custom_references.clone().unwrap().contains_key(&key)) {
                                 println!("{}", format!("Found an unmapped column matching '{}': {} ({}___{})", self.regex, column_name, database_name, table_name));
