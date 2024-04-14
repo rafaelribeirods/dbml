@@ -30,7 +30,13 @@ pub enum SubCommands {
         regex: String,
         /// The key referenced by the columns that match regex (format: {database_name}___{table_name}.{column_name})
         referenced_key: Option<String>,
-    }
+    },
+
+    /// Performs a few validations in a project's config file (does not modify it)
+    Validate {
+        /// The project to be validated
+        project: String,
+    },
 
 }
 
