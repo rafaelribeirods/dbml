@@ -32,7 +32,7 @@ pub struct ProjectDatabase {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tables: Option<HashMap<String, ProjectDatabaseTable>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub references: Option<Vec<ProjectDatabaseReference>>
+    pub references: Option<HashMap<String, Vec<String>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,8 +68,8 @@ pub struct ProjectDatabaseTable {
 
 impl ProjectDatabaseTable {
 
-    pub fn to_dbml(&self, name: String) -> String {
-        let mut dbml = format!("Table {} {{\n", name);
+    pub fn to_dbml(&self, database_name: &String, name: &String) -> String {
+        let mut dbml = format!("Table {}___{} {{\n", database_name, name);
 
         let mut ordered_columns: Vec<Option<(&String, &ProjectDatabaseColumn)>> = Vec::new();
         for (column_name, column) in &self.columns {
@@ -187,26 +187,6 @@ pub struct ProjectDatabaseColumn {
 pub struct ProjectDatabaseIndex {
     pub columns: Vec<String>,
     pub is_primary_key: bool
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ProjectDatabaseReference {
-    pub key: String,
-    pub referenced_key: String,
-    pub operator: String,
-}
-
-impl ProjectDatabaseReference {
-
-    pub fn to_dbml(&self) -> String {
-        format!(
-            "Ref: {} {} {}\n",
-            self.key,
-            self.operator,
-            self.referenced_key
-        )
-    }
-
 }
 
 pub fn load(project: &String) -> Result<Config> {

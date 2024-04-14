@@ -17,16 +17,22 @@ impl Command for GenerateCommand {
         let config: Config = config::load(&self.project)?;
         let mut dbml: DBML = dbml::init(&self.project)?;
 
-        for (_, database) in &config.databases {
+        for (database_name, database) in &config.databases {
             if let Some(tables) = &database.tables {
                 for (table_name, table) in tables {
-                    dbml.write(table.to_dbml(table_name.to_string()))?;
+                    dbml.write(table.to_dbml(database_name, table_name))?;
                 }
             }
 
             if let Some(references) = &database.references {
-                for reference in references {
-                    dbml.write(reference.to_dbml())?;
+                for (key, referenced_keys) in references {
+                    for referenced_key in referenced_keys {
+                        dbml.write(format!(
+                            "Ref: {} - {}\n",
+                            key,
+                            referenced_key
+                        ))?;
+                    }
                 }
             }
         }

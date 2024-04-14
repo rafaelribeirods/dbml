@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex, ProjectDatabaseReference}, db::{self}};
+use crate::{commander::Command, config::{self, Config, ProjectDatabaseColumn, ProjectDatabaseTable, ProjectDatabaseIndex}, db::{self}};
 
 pub struct ScanCommand {
     pub project: String
@@ -36,7 +36,7 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
 
         let result = db::scan_tables_and_columns(database.connection.clone()).await?;
         for column_info in result {
-            let current_table_name = format!("{}.{}", column_info.schema_name, column_info.table_name);
+            let current_table_name = format!("{}___{}", column_info.schema_name, column_info.table_name);
             if current_table_name != table_name {
                 if !table_name.is_empty() {
                     tables.insert(table_name, ProjectDatabaseTable {
@@ -117,28 +117,26 @@ async fn scan_references(config: &mut Config) -> Result<()> {
         println!("Scanning references from {} at {}", database_name, database.connection.get_connection_string());
 
         let result = db::scan_references(database.connection.clone()).await?;
-        let mut references: Vec<ProjectDatabaseReference> = Vec::new();
+        let mut references: HashMap<String, Vec<String>> = HashMap::new();
         for reference_info in result {
             let key = format!(
-                "{}.{}.{}",
+                "{}___{}___{}.{}",
+                database_name,
                 reference_info.schema_name,
                 reference_info.table_name,
                 reference_info.column_name
             );
             let referenced_key = format!(
-                "{}.{}.{}", 
+                "{}___{}___{}.{}", 
+                database_name,
                 reference_info.referenced_schema_name,
                 reference_info.referenced_table_name,
                 reference_info.referenced_column_name
             );
 
-            let reference = ProjectDatabaseReference {
-                key,
-                referenced_key,
-                operator: String::from("-"),
-            };
-
-            references.push(reference);
+            let mut referenced_keys: Vec<String> = Vec::new();
+            referenced_keys.push(referenced_key);
+            references.insert(key, referenced_keys);
         }
 
         database.references = Some(references);
