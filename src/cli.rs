@@ -22,6 +22,14 @@ pub enum SubCommands {
         project: String,
     },
 
+    /// Searches for columns that match a given regex and offers an option to add them to the custom references if they are not referenced anywhere
+    Search {
+        /// The project that has the databases in which the search will be performed
+        project: String,
+        /// The regex that will be used to search for the columns
+        regex: String,
+    }
+
 }
 
 pub fn parse() -> Cli {
