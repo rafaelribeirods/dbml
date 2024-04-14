@@ -5,15 +5,28 @@ use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 use crate::db::DatabaseType;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct FileConfig {
+    pub databases: HashMap<String, ProjectDatabase>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_references: Option<HashMap<String, Vec<String>>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub project: String,
     pub databases: HashMap<String, ProjectDatabase>,
+    pub custom_references: Option<HashMap<String, Vec<String>>>,
 }
 
 impl Config {
 
     pub fn save(&self) -> Result<()> {
-        let contents = serde_yaml::to_string(&self.databases)
+        let config = FileConfig {
+            databases: self.databases.clone(),
+            custom_references: self.custom_references.clone(),
+        };
+
+        let contents = serde_yaml::to_string(&config)
             .map_err(|err| anyhow!(format!("Could not generate the updated configuration file for project '{}': {}", self.project, err)))?;
 
         let path = get_path(&self.project)?;
@@ -26,7 +39,7 @@ impl Config {
 
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectDatabase {
     pub connection: ProjectDatabaseConnection,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -59,7 +72,7 @@ impl ProjectDatabaseConnection {
 
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectDatabaseTable {
     pub columns: HashMap<String, ProjectDatabaseColumn>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -169,7 +182,7 @@ impl ProjectDatabaseTable {
 
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectDatabaseColumn {
     pub data_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -183,7 +196,7 @@ pub struct ProjectDatabaseColumn {
     pub ordinal_position: u8
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectDatabaseIndex {
     pub columns: Vec<String>,
     pub is_primary_key: bool
@@ -191,10 +204,10 @@ pub struct ProjectDatabaseIndex {
 
 pub fn load(project: &String) -> Result<Config> {
     let contents = get_file_contents(project)?;
-    let databases = serde_yaml::from_str::<HashMap<String, ProjectDatabase>>(&contents)
+    let config = serde_yaml::from_str::<FileConfig>(&contents)
         .map_err(|err| anyhow!(format!("Could not parse the config file for the '{}' project: {}", project, err)))?;
 
-    Ok(Config { project: project.to_string(), databases })
+    Ok(Config { project: project.to_string(), databases: config.databases, custom_references: config.custom_references })
 }
 
 #[cfg(not(test))]

@@ -24,7 +24,7 @@ impl Command for SearchCommand {
                     for (column_name, _) in &table.columns {
                         if re.is_match(column_name) {
                             if database.references.is_none() || !database.references.as_ref().unwrap().contains_key(&format!("{}___{}.{}", database_name, table_name, column_name)) {
-                                format!("Found an unmapped column matching '{}': {} ({}___{})", self.regex, column_name, database_name, table_name);
+                                println!("{}", format!("Found an unmapped column matching '{}': {} ({}___{})", self.regex, column_name, database_name, table_name));
                             }
                         }
                     }
