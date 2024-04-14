@@ -38,6 +38,12 @@ pub enum SubCommands {
         project: String,
     },
 
+    /// Removes the scanned tables and references of every database in the project (does not change the custom references)
+    Clean {
+        /// The project to be cleaned
+        project: String,
+    }
+
 }
 
 pub fn parse() -> Cli {

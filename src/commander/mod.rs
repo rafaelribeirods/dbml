@@ -1,7 +1,8 @@
 use anyhow::Result;
 use crate::cli::{Cli, SubCommands};
-use self::{generate::GenerateCommand, scan::ScanCommand, search::SearchCommand, validate::ValidateCommand};
+use self::{clean::CleanCommand, generate::GenerateCommand, scan::ScanCommand, search::SearchCommand, validate::ValidateCommand};
 
+mod clean;
 mod scan;
 mod search;
 mod generate;
@@ -18,5 +19,6 @@ pub async fn execute(cli: Cli) -> Result<()> {
         SubCommands::Generate { project } => GenerateCommand { project }.execute().await,
         SubCommands::Search { project, regex, referenced_key } => SearchCommand { project, regex, referenced_key }.execute().await,
         SubCommands::Validate { project } => ValidateCommand { project }.execute().await,
+        SubCommands::Clean { project } => CleanCommand { project }.execute().await,
     }
 }
