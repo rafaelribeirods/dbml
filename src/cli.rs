@@ -20,6 +20,8 @@ pub enum SubCommands {
     Generate {
         /// The project to be have it's DBML file generated
         project: String,
+        /// The table from which the generation will start. If given, unrelated tables may not appear
+        starting_table: Option<String>,
     },
 
     /// Searches for columns that match a given regex and offers an option to add them to the custom references if they are not referenced anywhere

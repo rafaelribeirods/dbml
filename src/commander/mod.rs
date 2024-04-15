@@ -16,7 +16,7 @@ pub trait Command {
 pub async fn execute(cli: Cli) -> Result<()> {
     match cli.command {
         SubCommands::Scan { project } => ScanCommand { project }.execute().await,
-        SubCommands::Generate { project } => GenerateCommand { project }.execute().await,
+        SubCommands::Generate { project, starting_table } => GenerateCommand { project, starting_table }.execute().await,
         SubCommands::Search { project, regex, referenced_key } => SearchCommand { project, regex, referenced_key }.execute().await,
         SubCommands::Validate { project } => ValidateCommand { project }.execute().await,
         SubCommands::Clean { project } => CleanCommand { project }.execute().await,
