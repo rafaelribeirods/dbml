@@ -37,6 +37,7 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
         let result = db::scan_tables_and_columns(
             database.connection.clone(),
             config.configurations.clone(),
+            database.configurations.clone()
         ).await?;
 
         for column_info in result {
@@ -123,6 +124,7 @@ async fn scan_references(config: &mut Config) -> Result<()> {
         let result = db::scan_references(
             database.connection.clone(),
             config.configurations.clone(),
+            database.configurations.clone()
         ).await?;
         for reference_info in result {
             let key = format!(

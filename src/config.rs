@@ -55,9 +55,17 @@ pub struct ProjectConfiguration {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectDatabase {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub configurations: Option<DatabaseConfiguration>,
     pub connection: ProjectDatabaseConnection,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tables: Option<HashMap<String, ProjectDatabaseTable>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DatabaseConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schemas_to_ignore: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

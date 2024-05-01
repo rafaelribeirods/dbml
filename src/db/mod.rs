@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
-use crate::config::{ProjectConfiguration, ProjectDatabaseConnection};
+use crate::config::{DatabaseConfiguration, ProjectConfiguration, ProjectDatabaseConnection};
 use mysql::MysqlDatabase;
 
 mod mysql;
@@ -51,18 +51,20 @@ pub trait DatabaseEngine {
 
 pub async fn scan_tables_and_columns(
     connection_info: ProjectDatabaseConnection,
-    configurations: Option<ProjectConfiguration>
+    configurations: Option<ProjectConfiguration>,
+    database_configurations: Option<DatabaseConfiguration>,
 ) -> Result<Vec<ColumnInfo>> {
     match connection_info.r#type {
-        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations }.scan_tables_and_columns().await
+        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations, database_configurations }.scan_tables_and_columns().await
     }
 }
 
 pub async fn scan_references(
     connection_info: ProjectDatabaseConnection,
-    configurations: Option<ProjectConfiguration>
+    configurations: Option<ProjectConfiguration>,
+    database_configurations: Option<DatabaseConfiguration>,
 ) -> Result<Vec<ReferenceInfo>> {
     match connection_info.r#type {
-        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations }.scan_references().await
+        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations, database_configurations }.scan_references().await
     }
 }

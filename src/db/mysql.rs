@@ -1,12 +1,13 @@
 use anyhow::{anyhow, Result};
 use sqlx::{MySqlConnection, Connection};
-use crate::config::{ProjectConfiguration, ProjectDatabaseConnection};
+use crate::config::{DatabaseConfiguration, ProjectConfiguration, ProjectDatabaseConnection};
 
 use super::{DatabaseEngine, ColumnInfo, ReferenceInfo};
 
 pub struct MysqlDatabase {
     pub connection_info: ProjectDatabaseConnection,
-    pub configurations: Option<ProjectConfiguration>
+    pub configurations: Option<ProjectConfiguration>,
+    pub database_configurations: Option<DatabaseConfiguration>,
 }
 
 impl DatabaseEngine for MysqlDatabase {
@@ -15,18 +16,22 @@ impl DatabaseEngine for MysqlDatabase {
 
         let mut where_clauses: Vec<String> = Vec::new();
         let default_where_clause = String::from("1 = 1");
-        match &self.configurations {
-            Some(configs) => {
-                match &configs.schemas_to_ignore {
-                    Some(schemas_by_type) => {
-                        if schemas_by_type.contains_key(self.connection_info.r#type.as_string()) {
-                            where_clauses.push(format!("table_schema NOT IN ('{}')", schemas_by_type.get(self.connection_info.r#type.as_string()).unwrap().join("\', \'")));
-                        }
-                    },
-                    None => where_clauses.push(default_where_clause),
+        if let Some(configs) = &self.configurations {
+            if let Some(schemas_by_type) = &configs.schemas_to_ignore {
+                if schemas_by_type.contains_key(self.connection_info.r#type.as_string()) {
+                    where_clauses.push(format!("table_schema NOT IN ('{}')", schemas_by_type.get(self.connection_info.r#type.as_string()).unwrap().join("\', \'")));
                 }
-            },
-            None => where_clauses.push(default_where_clause),
+            }
+        }
+
+        if let Some(configs) = &self.database_configurations {
+            if let Some(schemas_by_type) = &configs.schemas_to_ignore {
+                where_clauses.push(format!("table_schema NOT IN ('{}')", schemas_by_type.join("\', \'")));
+            }
+        }
+
+        if where_clauses.len() == 0 {
+            where_clauses.push(default_where_clause);
         }
         
         let query: String = format!("
