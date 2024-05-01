@@ -1,17 +1,35 @@
 use anyhow::{anyhow, Result};
 use sqlx::{MySqlConnection, Connection};
-use crate::config::ProjectDatabaseConnection;
+use crate::config::{ProjectConfiguration, ProjectDatabaseConnection};
 
 use super::{DatabaseEngine, ColumnInfo, ReferenceInfo};
 
 pub struct MysqlDatabase {
-    pub connection_info: ProjectDatabaseConnection
+    pub connection_info: ProjectDatabaseConnection,
+    pub configurations: Option<ProjectConfiguration>
 }
 
 impl DatabaseEngine for MysqlDatabase {
 
     async fn scan_tables_and_columns(&self) -> Result<Vec<ColumnInfo>> {
-        let query: &str = "
+
+        let mut where_clauses: Vec<String> = Vec::new();
+        let default_where_clause = String::from("1 = 1");
+        match &self.configurations {
+            Some(configs) => {
+                match &configs.schemas_to_ignore {
+                    Some(schemas_by_type) => {
+                        if schemas_by_type.contains_key(self.connection_info.r#type.as_string()) {
+                            where_clauses.push(format!("table_schema NOT IN ('{}')", schemas_by_type.get(self.connection_info.r#type.as_string()).unwrap().join("\', \'")));
+                        }
+                    },
+                    None => where_clauses.push(default_where_clause),
+                }
+            },
+            None => where_clauses.push(default_where_clause),
+        }
+        
+        let query: String = format!("
         SELECT 
             table_schema schema_name,
             table_name,
@@ -25,13 +43,14 @@ impl DatabaseEngine for MysqlDatabase {
             column_default AS default_value,
             ordinal_position
         FROM information_schema.columns
+        WHERE {}
         ORDER BY table_name, ordinal_position;
-        ";
+        ", where_clauses.join(" AND "));
 
         let mut conn = MySqlConnection::connect(&self.connection_info.get_connection_string()).await
             .map_err(|err| anyhow!(format!("Could not connect to '{}': {}", &self.connection_info.get_connection_string(), err)))?;
         
-        sqlx::query_as::<_, ColumnInfo>(query).fetch_all(&mut conn).await
+        sqlx::query_as::<_, ColumnInfo>(&query).fetch_all(&mut conn).await
             .map_err(|err| anyhow!(format!("Could not run the scan query on '{}': {}", &self.connection_info.get_connection_string(), err)))
     }
 

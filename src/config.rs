@@ -6,6 +6,8 @@ use crate::db::DatabaseType;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub configurations: Option<ProjectConfiguration>,
     pub databases: HashMap<String, ProjectDatabase>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub references: Option<HashMap<String, Vec<String>>>,
@@ -16,6 +18,7 @@ pub struct FileConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub project: String,
+    pub configurations: Option<ProjectConfiguration>,
     pub databases: HashMap<String, ProjectDatabase>,
     pub references: Option<HashMap<String, Vec<String>>>,
     pub custom_references: Option<HashMap<String, Vec<String>>>,
@@ -25,6 +28,7 @@ impl Config {
 
     pub fn save(&self) -> Result<()> {
         let config = FileConfig {
+            configurations: self.configurations.clone(),
             databases: self.databases.clone(),
             references: self.references.clone(),
             custom_references: self.custom_references.clone(),
@@ -41,6 +45,12 @@ impl Config {
             .map_err(|err| anyhow!(format!("Could save updated configuration for project '{}': {}", self.project, err)))
     }
 
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProjectConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schemas_to_ignore: Option<HashMap<String, Vec<String>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -211,6 +221,7 @@ pub fn load(project: &String) -> Result<Config> {
 
     Ok(Config { 
         project: project.to_string(), 
+        configurations: config.configurations,
         databases: config.databases, 
         references: config.references,
         custom_references: config.custom_references 

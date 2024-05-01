@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
-use crate::config::ProjectDatabaseConnection;
+use crate::config::{ProjectConfiguration, ProjectDatabaseConnection};
 use mysql::MysqlDatabase;
 
 mod mysql;
@@ -9,6 +9,14 @@ mod mysql;
 #[serde(rename_all = "lowercase")]
 pub enum DatabaseType {
     MySql,
+}
+
+impl DatabaseType {
+    fn as_string(&self) -> &'static str {
+        match self {
+            DatabaseType::MySql => "mysql",
+        }
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -41,14 +49,20 @@ pub trait DatabaseEngine {
     async fn scan_references(&self) -> Result<Vec<ReferenceInfo>>;
 }
 
-pub async fn scan_tables_and_columns(connection_info: ProjectDatabaseConnection) -> Result<Vec<ColumnInfo>> {
+pub async fn scan_tables_and_columns(
+    connection_info: ProjectDatabaseConnection,
+    configurations: Option<ProjectConfiguration>
+) -> Result<Vec<ColumnInfo>> {
     match connection_info.r#type {
-        DatabaseType::MySql => MysqlDatabase{ connection_info }.scan_tables_and_columns().await
+        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations }.scan_tables_and_columns().await
     }
 }
 
-pub async fn scan_references(connection_info: ProjectDatabaseConnection) -> Result<Vec<ReferenceInfo>> {
+pub async fn scan_references(
+    connection_info: ProjectDatabaseConnection,
+    configurations: Option<ProjectConfiguration>
+) -> Result<Vec<ReferenceInfo>> {
     match connection_info.r#type {
-        DatabaseType::MySql => MysqlDatabase{ connection_info }.scan_references().await
+        DatabaseType::MySql => MysqlDatabase{ connection_info, configurations }.scan_references().await
     }
 }

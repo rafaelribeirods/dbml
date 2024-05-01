@@ -34,7 +34,11 @@ async fn scan_tables_and_columns(config: &mut Config) -> Result<()> {
         };
         let mut table_name = String::from("");
 
-        let result = db::scan_tables_and_columns(database.connection.clone()).await?;
+        let result = db::scan_tables_and_columns(
+            database.connection.clone(),
+            config.configurations.clone(),
+        ).await?;
+
         for column_info in result {
             let current_table_name = format!("{}___{}", column_info.schema_name, column_info.table_name);
             if current_table_name != table_name {
@@ -116,7 +120,10 @@ async fn scan_references(config: &mut Config) -> Result<()> {
     for (database_name, database) in &mut config.databases {
         println!("Scanning references from {} at {}", database_name, database.connection.get_connection_string());
 
-        let result = db::scan_references(database.connection.clone()).await?;
+        let result = db::scan_references(
+            database.connection.clone(),
+            config.configurations.clone(),
+        ).await?;
         for reference_info in result {
             let key = format!(
                 "{}___{}___{}.{}",
